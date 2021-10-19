@@ -1,0 +1,28 @@
+timestamps {
+    properties([[$class: 'RebuildSettings', autoRebuild: false, rebuildDisabled: false],
+                parameters([choice(choices: ['kr', 'us', 'jp', 'eu'], description: 'Select the region', name: 'region')])
+                ])
+
+    def region = params.region
+    manager.addShortText("region=${region}")
+
+    node('real') {
+        checkout scm
+        dir('goss') {
+            warnError('something failed') {
+                sh '''
+                    docker logout
+                    docker build . -t goss/goss
+                   '''
+                timeout(60) {
+                    docker.image("goss/goss").inside {
+                        sh ''' #!/bin/sh
+                                python -u -m pytest --workers auto --tests-per-worker auto --region ${region} --rootdir=tests/ --html=reports_${BUILD_NUMBER}.html'''
+                    }
+                }
+            }
+        }
+        publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: true, reportDir: 'goss/',
+                    reportFiles: 'reports_${BUILD_NUMBER}.html', reportName: 'goss-test-report', reportTitles: ''])
+    }
+}
