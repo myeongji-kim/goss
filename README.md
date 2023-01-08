@@ -1,2 +1,2 @@
 # goss
-goss test about IaaS instance with DBaaS dependency.
+goss test for checking dependency or essential packages in instance of DBaaS
